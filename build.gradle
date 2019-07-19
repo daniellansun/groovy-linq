@@ -1,0 +1,29 @@
+group 'me.sunlan'
+version '1.0-SNAPSHOT'
+
+
+apply plugin: 'java'
+apply plugin: 'groovy'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+compileJava.options.encoding = 'UTF-8'
+compileGroovy.options.encoding = 'UTF-8'
+
+repositories {
+    jcenter()
+}
+
+ext {
+    groovyVersion = '3.0.0-beta-2'
+    junitVersion = '4.12'
+}
+
+dependencies {
+    compile "org.codehaus.groovy:groovy-all:$groovyVersion"
+    testCompile "junit:junit:$junitVersion"
+}
+
+wrapper {
+    gradleVersion = '5.5.1'
+}
