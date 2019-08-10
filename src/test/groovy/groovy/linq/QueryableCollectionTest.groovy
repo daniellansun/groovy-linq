@@ -315,7 +315,6 @@ class QueryableCollectionTest extends GroovyTestCase {
         assert [1] == result
     }
 
-
     void testFromWhereLimitSelect() {
         def nums1 = [1, 2, 3, 4, 5]
         def nums2 = [0, 1, 2, 3, 4, 5, 6]
@@ -328,6 +327,12 @@ class QueryableCollectionTest extends GroovyTestCase {
                         .toList()
         assert [4, 5] == result
     }
+
+//    void testIterator() {
+//        def nums = [1, 2, 3]
+//        def result = from(nums).iterator().toList()
+//        assert nums == result
+//    }
 
     @ToString
     @EqualsAndHashCode

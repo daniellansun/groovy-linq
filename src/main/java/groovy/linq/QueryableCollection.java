@@ -22,6 +22,7 @@ import groovy.lang.Tuple;
 import groovy.lang.Tuple2;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class QueryableCollection<T> implements Queryable<T> {
+public class QueryableCollection<T> implements Queryable<T>, Iterable<T> {
     private final Iterable<T> sourceIterable;
     private Stream<T> sourceStream;
 
@@ -48,6 +49,11 @@ public class QueryableCollection<T> implements Queryable<T> {
     private QueryableCollection(Iterable<T> sourceIterable) {
         this.sourceIterable = sourceIterable;
         this.sourceStream = toStream(sourceIterable);
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return sourceIterable.iterator();
     }
 
     @Override
