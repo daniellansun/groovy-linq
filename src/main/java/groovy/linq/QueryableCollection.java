@@ -22,7 +22,6 @@ import groovy.lang.Tuple;
 import groovy.lang.Tuple2;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -40,8 +39,10 @@ public class QueryableCollection<T> implements Queryable<T> {
         return new QueryableCollection<>(sourceIterable);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Queryable<T> from(Stream<? extends T> sourceStream) {
-        return from(sourceStream.collect(Collectors.toList()));
+        Iterable<T> sourceIterable = (Iterable<T>) toIterable(sourceStream);
+        return from(sourceIterable);
     }
 
     private QueryableCollection(Iterable<T> sourceIterable) {
@@ -210,11 +211,10 @@ public class QueryableCollection<T> implements Queryable<T> {
     }
 
     private static <T> Stream<T> toStream(Iterable<T> sourceIterable) {
-        return toStream(sourceIterable.iterator());
+        return StreamSupport.stream(sourceIterable.spliterator(), false);
     }
 
-    private static <T> Stream<T> toStream(Iterator<T> sourceIterator) {
-        Iterable<T> iterable = () -> sourceIterator;
-        return StreamSupport.stream(iterable.spliterator(), false);
+    private static <T> Iterable<T> toIterable(Stream<T> sourceStream) {
+        return sourceStream::iterator;
     }
 }
