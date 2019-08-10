@@ -15,7 +15,7 @@ repositories {
 }
 
 ext {
-    groovyVersion = '3.0.0-beta-2'
+    groovyVersion = '3.0.0-beta-3'
     junitVersion = '4.12'
 }
 
