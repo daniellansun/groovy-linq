@@ -18,11 +18,11 @@
  */
 package groovy.linq
 
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 
-import java.util.stream.Collectors
 import java.util.stream.Stream
 
 import static groovy.linq.Queryable.Order
@@ -74,7 +74,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3]
         def nums1 = [2, 3, 4]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3]] == result
+        assert [[null, 1], [2, 2], [3, 3]] == result
     }
 
     void testLeftJoin2() {
@@ -88,7 +88,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3, null]
         def nums1 = [2, 3, 4]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3], [null, null]] == result
+        assert [[null, 1], [2, 2], [3, 3], [null, null]] == result
     }
 
     void testLeftJoin3() {
@@ -102,7 +102,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3, null]
         def nums1 = [2, 3, 4, null]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3], [null, null]] == result
+        assert [[null, 1], [2, 2], [3, 3], [null, null]] == result
     }
 
     void testLeftJoin4() {
@@ -116,7 +116,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3]
         def nums1 = [2, 3, 4, null]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3]] == result
+        assert [[null, 1], [2, 2], [3, 3]] == result
     }
 
     void testLeftJoin5() {
@@ -130,7 +130,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3, null, null]
         def nums1 = [2, 3, 4]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3], [null, null], [null, null]] == result
+        assert [[null, 1], [2, 2], [3, 3], [null, null], [null, null]] == result
     }
 
     void testLeftJoin6() {
@@ -144,7 +144,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3, null, null]
         def nums1 = [2, 3, 4, null]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3], [null, null], [null, null]] == result
+        assert [[null, 1], [2, 2], [3, 3], [null, null], [null, null]] == result
     }
 
     void testLeftJoin7() {
@@ -158,7 +158,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3, null, null]
         def nums1 = [2, 3, 4, null, null]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3], [null, null], [null, null]] == result
+        assert [[null, 1], [2, 2], [3, 3], [null, null], [null, null]] == result
     }
 
     void testLeftJoin8() {
@@ -172,7 +172,7 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3, null]
         def nums1 = [2, 3, 4, null, null]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3], [null, null]] == result
+        assert [[null, 1], [2, 2], [3, 3], [null, null]] == result
     }
 
     void testLeftJoin9() {
@@ -186,7 +186,21 @@ class QueryableCollectionTest extends GroovyTestCase {
         def nums2 = [1, 2, 3]
         def nums1 = [2, 3, 4, null, null]
         def result = from(nums1).rightJoin(from(nums2), (a, b) -> a == b).toList()
-        assert [[1, null], [2, 2], [3, 3]] == result
+        assert [[null, 1], [2, 2], [3, 3]] == result
+    }
+
+    void testFullJoin() {
+        def nums1 = [1, 2, 3]
+        def nums2 = [2, 3, 4]
+        def result = from(nums1).fullJoin(from(nums2), (a, b) -> a == b).toList()
+        assert [[1, null], [2, 2], [3, 3], [null, 4]] == result
+    }
+
+    void testCrossJoin() {
+        def nums1 = [1, 2, 3]
+        def nums2 = [3, 4, 5]
+        def result = from(nums1).crossJoin(from(nums2)).toList()
+        assert [[1, 3], [1, 4], [1, 5], [2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5]] == result
     }
 
     void testWhere() {
@@ -195,10 +209,29 @@ class QueryableCollectionTest extends GroovyTestCase {
         assert [4, 5] == result
     }
 
-    void testGroupBy() {
+    void testGroupBySelect0() {
         def nums = [1, 2, 2, 3, 3, 4, 4, 5]
-        def result = from(nums).groupBy(e -> e, Collectors.counting()).toList()
+        def result = from(nums).groupBy(e -> e).select(e -> Tuple.tuple(e.v1, e.v2.toList())).toList()
+        assert [[1, [1]], [2, [2, 2]], [3, [3, 3]], [4, [4, 4]], [5, [5]]] == result
+    }
+
+    void testGroupBySelect1() {
+        def nums = [1, 2, 2, 3, 3, 4, 4, 5]
+        def result = from(nums).groupBy(e -> e).select(e -> Tuple.tuple(e.v1, e.v2.count())).toList()
         assert [[1, 1], [2, 2], [3, 2], [4, 2], [5, 1]] == result
+    }
+
+    void testGroupBySelect2() {
+        def nums = [1, 2, 2, 3, 3, 4, 4, 5]
+        def result = from(nums).groupBy(e -> e).select(e -> Tuple.tuple(e.v1, e.v2.count(), e.v2.sum(n -> new BigDecimal(n)))).toList()
+        assert [[1, 1, 1], [2, 2, 4], [3, 2, 6], [4, 2, 8], [5, 1, 5]] == result
+    }
+
+    @CompileDynamic
+    void testGroupBySelect3() {
+        def nums = [1, 2, 2, 3, 3, 4, 4, 5]
+        def result = from(nums).groupBy(e -> e, (k, q) -> k > 2).select(e -> Tuple.tuple(e.v1, e.v2.count(), e.v2.sum(n -> new BigDecimal(n)))).toList()
+        assert [[3, 2, 6], [4, 2, 8], [5, 1, 5]] == result
     }
 
     void testOrderBy() {
@@ -247,6 +280,41 @@ class QueryableCollectionTest extends GroovyTestCase {
         def result = from(nums).select(e -> e + 1).toList()
         assert [2, 3, 4, 5, 6] == result
     }
+
+    void testDistinct() {
+        def nums = [1, 2, 2, 3, 3, 2, 3, 4, 5, 5]
+        def result = from(nums).distinct().toList()
+        assert [1, 2, 3, 4, 5] == result
+    }
+
+    void testUnion() {
+        def nums1 = [1, 2, 3]
+        def nums2 = [2, 3, 4]
+        def result = from(nums1).union(from(nums2)).toList()
+        assert [1, 2, 3, 4] == result
+    }
+
+    void testUnionAll() {
+        def nums1 = [1, 2, 3]
+        def nums2 = [2, 3, 4]
+        def result = from(nums1).unionAll(from(nums2)).toList()
+        assert [1, 2, 3, 2, 3, 4] == result
+    }
+
+    void testIntersect() {
+        def nums1 = [1, 2, 2, 3]
+        def nums2 = [2, 3, 3, 4]
+        def result = from(nums1).intersect(from(nums2)).toList()
+        assert [2, 3] == result
+    }
+
+    void testMinus() {
+        def nums1 = [1, 1, 2, 3]
+        def nums2 = [2, 3, 4]
+        def result = from(nums1).minus(from(nums2)).toList()
+        assert [1] == result
+    }
+
 
     void testFromWhereLimitSelect() {
         def nums1 = [1, 2, 3, 4, 5]

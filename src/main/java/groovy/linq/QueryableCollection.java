@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -40,7 +39,7 @@ public class QueryableCollection<T> implements Queryable<T> {
         return new QueryableCollection<>(sourceIterable);
     }
 
-    public static <T> Queryable<T> from(Stream<T> sourceStream) {
+    public static <T> Queryable<T> from(Stream<? extends T> sourceStream) {
         return from(sourceStream.collect(Collectors.toList()));
     }
 
@@ -66,44 +65,50 @@ public class QueryableCollection<T> implements Queryable<T> {
     }
 
     @Override
-    public <U> Queryable<Tuple2<U, T>> rightJoin(Queryable<? extends U> queryable, BiPredicate<? super U, ? super T> joiner) {
-        return outerJoin(queryable, this, joiner);
+    public <U> Queryable<Tuple2<T, U>> rightJoin(Queryable<? extends U> queryable, BiPredicate<? super T, ? super U> joiner) {
+        return outerJoin(queryable, this, (a, b) -> joiner.test(b, a)).select(e -> Tuple.tuple(e.getV2(), e.getV1()));
+    }
+
+    @Override
+    public <U> Queryable<Tuple2<T, U>> crossJoin(Queryable<? extends U> queryable) {
+        Stream<Tuple2<T, U>> stream =
+                this.stream()
+                        .flatMap(p ->
+                                queryable.stream()
+                                        .map(c -> Tuple.tuple(p, c)));
+
+        return from(stream);
     }
 
     @Override
     public Queryable<T> where(Predicate<? super T> filter) {
-        Stream<T> stream = this.stream().filter(e -> filter.test(e));
+        Stream<T> stream = this.stream().filter(filter::test);
 
         return from(stream);
     }
 
     @Override
-    public <K, R> Queryable<Tuple2<K, R>> groupBy(Function<? super T, ? extends K> classifier, Collector<? super T, ?, R> aggregation) {
-        Stream<Tuple2<K, R>> stream =
+    public <K> Queryable<Tuple2<K, Queryable<T>>> groupBy(Function<? super T, ? extends K> classifier, BiPredicate<? super K, ? super Queryable<? extends T>> having) {
+        Stream<Tuple2<K, Queryable<T>>> stream =
                 this.stream()
-                        .collect(Collectors.groupingBy(classifier, aggregation))
+                        .collect(Collectors.groupingBy(classifier, Collectors.toList()))
                         .entrySet().stream()
-                        .map(e -> Tuple.tuple(e.getKey(), e.getValue()));
+                        .filter(m -> having.test(m.getKey(), from(m.getValue())))
+                        .map(m -> Tuple.tuple(m.getKey(), from(m.getValue())));
 
         return from(stream);
     }
 
     @Override
-    public <U> Queryable<U> having(Predicate<? super U> filter) {
-        return null;
-    }
-
-    @Override
-    public <U extends Comparable<? super U>> Queryable<T> orderBy(Order<T, U>... orders) {
+    public <U extends Comparable<? super U>> Queryable<T> orderBy(Order<? super T, ? extends U>... orders) {
         Comparator<T> comparator = null;
         for (int i = 0, n = orders.length; i < n; i++) {
-            Order<T, U> order = orders[i];
+            Order<? super T, ? extends U> order = orders[i];
             Comparator<U> ascOrDesc = order.isAsc() ? Comparator.naturalOrder() : Comparator.reverseOrder();
-            if (0 == i) {
-                comparator = Comparator.comparing(order.getKeyExtractor(), ascOrDesc);
-            } else {
-                comparator = comparator.thenComparing(order.getKeyExtractor(), ascOrDesc);
-            }
+            comparator =
+                    0 == i
+                            ? Comparator.comparing(order.getKeyExtractor(), ascOrDesc)
+                            : comparator.thenComparing(order.getKeyExtractor(), ascOrDesc);
         }
 
         if (null == comparator) {
@@ -128,23 +133,31 @@ public class QueryableCollection<T> implements Queryable<T> {
     }
 
     @Override
-    public Queryable<T> union(Queryable<? extends T> queryable) {
-        return null;
+    public Queryable<T> distinct() {
+        Stream<? extends T> stream = this.stream().distinct();
+
+        return from(stream);
     }
 
     @Override
     public Queryable<T> unionAll(Queryable<? extends T> queryable) {
-        return null;
+        Stream<T> stream = Stream.concat(this.stream(), queryable.stream());
+
+        return from(stream);
     }
 
     @Override
     public Queryable<T> intersect(Queryable<? extends T> queryable) {
-        return null;
+        Stream<T> stream = this.stream().filter(a -> queryable.stream().anyMatch(b -> b.equals(a))).distinct();
+
+        return from(stream);
     }
 
     @Override
     public Queryable<T> minus(Queryable<? extends T> queryable) {
-        return null;
+        Stream<T> stream = this.stream().filter(a -> queryable.stream().noneMatch(b -> ((Object) b).equals(a))).distinct();
+
+        return from(stream);
     }
 
     @Override
@@ -195,9 +208,5 @@ public class QueryableCollection<T> implements Queryable<T> {
     private static <T> Stream<T> toStream(Iterator<T> sourceIterator) {
         Iterable<T> iterable = () -> sourceIterator;
         return StreamSupport.stream(iterable.spliterator(), false);
-    }
-
-    private enum GinqConstant {
-        NULL
     }
 }
