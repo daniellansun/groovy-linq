@@ -34,6 +34,7 @@ import java.util.stream.StreamSupport;
 
 public class QueryableCollection<T> implements Queryable<T> {
     private final Iterable<T> sourceIterable;
+    private Stream<T> sourceStream;
 
     public static <T> Queryable<T> from(Iterable<T> sourceIterable) {
         return new QueryableCollection<>(sourceIterable);
@@ -45,6 +46,7 @@ public class QueryableCollection<T> implements Queryable<T> {
 
     private QueryableCollection(Iterable<T> sourceIterable) {
         this.sourceIterable = sourceIterable;
+        this.sourceStream = toStream(sourceIterable);
     }
 
     @Override
@@ -167,7 +169,13 @@ public class QueryableCollection<T> implements Queryable<T> {
 
     @Override
     public Stream<T> stream() {
-        return toStream(sourceIterable); // we have to create new stream every time because Java stream can not be reused
+        try {
+            sourceStream = sourceStream.peek(e -> {}); // check whether the stream is usable
+        } catch (IllegalStateException ex) {
+            sourceStream = toStream(sourceIterable);  // we have to create new stream every time because Java stream can not be reused
+        }
+
+        return sourceStream;
     }
 
     private static <T, U> Queryable<Tuple2<T, U>> outerJoin(Queryable<? extends T> queryable1, Queryable<? extends U> queryable2, BiPredicate<? super T, ? super U> joiner) {
