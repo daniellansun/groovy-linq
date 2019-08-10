@@ -223,14 +223,30 @@ class QueryableCollectionTest extends GroovyTestCase {
 
     void testGroupBySelect2() {
         def nums = [1, 2, 2, 3, 3, 4, 4, 5]
-        def result = from(nums).groupBy(e -> e).select(e -> Tuple.tuple(e.v1, e.v2.count(), e.v2.sum(n -> new BigDecimal(n)))).toList()
+        def result =
+                from(nums).groupBy(e -> e)
+                        .select(e ->
+                                Tuple.tuple(
+                                        e.v1,
+                                        e.v2.count(),
+                                        e.v2.sum(n -> new BigDecimal(n))
+                                )
+                        ).toList()
         assert [[1, 1, 1], [2, 2, 4], [3, 2, 6], [4, 2, 8], [5, 1, 5]] == result
     }
 
     @CompileDynamic
     void testGroupBySelect3() {
         def nums = [1, 2, 2, 3, 3, 4, 4, 5]
-        def result = from(nums).groupBy(e -> e, (k, q) -> k > 2).select(e -> Tuple.tuple(e.v1, e.v2.count(), e.v2.sum(n -> new BigDecimal(n)))).toList()
+        def result =
+                from(nums).groupBy(e -> e, (k, q) -> k > 2)
+                        .select(e ->
+                                Tuple.tuple(
+                                        e.v1,
+                                        e.v2.count(),
+                                        e.v2.sum(n -> new BigDecimal(n))
+                                )
+                        ).toList()
         assert [[3, 2, 6], [4, 2, 8], [5, 1, 5]] == result
     }
 
