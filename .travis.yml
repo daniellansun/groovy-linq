@@ -30,13 +30,12 @@ matrix:
     - jdk: oraclejdk8
 
 before_script:
-  - |
-    unset _JAVA_OPTIONS
+  - unset _JAVA_OPTIONS
   - chmod +x gradlew
 
 script:
   - ./gradlew -version
-  - travis_wait 60 ./gradlew test
+  - travis_wait 60 ./gradlew sonarqube -Dsonar.projectKey=danielsun1106_groovy-linq -Dsonar.organization=danielsun1106 -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=$SONAR_LOGIN
 
 # As recommended in:
 # https://docs.travis-ci.com/user/languages/java/#Caching
