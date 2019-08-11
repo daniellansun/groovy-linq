@@ -164,7 +164,7 @@ public class QueryableCollection<T> implements Queryable<T>, Iterable<T> {
 
     @Override
     public Queryable<T> minus(Queryable<? extends T> queryable) {
-        Stream<T> stream = this.stream().filter(a -> queryable.stream().noneMatch(b -> ((Object) b).equals(a))).distinct();
+        Stream<T> stream = this.stream().filter(a -> queryable.stream().noneMatch(b -> b.equals(a))).distinct();
 
         return from(stream);
     }
